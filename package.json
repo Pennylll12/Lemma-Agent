@@ -1,0 +1,27 @@
+{
+  "name": "lemma-agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pennylll12/Lemma-Agent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Pennylll12/Lemma-Agent/issues"
+  },
+  "homepage": "https://github.com/Pennylll12/Lemma-Agent#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
