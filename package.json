@@ -7,7 +7,11 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mcp:start": "node runtime/lark-mcp-server.js",
+    "test:lark-auth": "node integrations/lark/test-auth.js",
+    "test:lark-tool": "node runtime/test-tool.js",
+    "test:mcp": "node runtime/test-mcp-client.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +26,11 @@
   },
   "homepage": "https://github.com/Pennylll12/Lemma-Agent#readme",
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv": "^17.4.2",
+    "https-proxy-agent": "^9.1.0",
+    "openai": "^7.12.1",
+    "undici": "^8.10.2",
+    "zod": "^3.25.76"
   }
 }

@@ -1,56 +1,73 @@
 ---
 name: lark-knowledge
-description: Read, summarize, analyze, and update Lark Wiki or Doc content through shared Lark tools. Use when a user provides a Lark Wiki/Doc URL or asks to inspect company knowledge, summarize documents, extract action items, identify unfinished work, or append explicitly requested updates to a Lark document.
+description: Read, summarize, analyze, and update company knowledge stored in Lark Wiki or Lark Docs. Use when a user provides a Lark URL or asks to inspect Lark content, summarize a document, extract action items, identify unfinished work, find decisions or owners, or explicitly append an update to a Lark document.
 ---
 
 # Lark Knowledge
 
-Use the shared Lark tools to work with company knowledge stored in Lark.
+Use shared Lark tools to work with company knowledge stored in Lark.
 
-## Core behavior
+## Operating rules
 
 - Prefer read-only operations by default.
-- Use `read_lark_document` when the user wants to inspect, summarize, analyze, or extract information from a Lark document.
-- Use `append_lark_document` only when the user clearly asks to write, append, or update content.
-- Do not expose Lark App IDs, App Secrets, access tokens, or internal API credentials.
-- Do not assume a document can be edited just because it can be read.
-- If a write operation fails because of permissions, report the permission problem rather than retrying blindly.
+- Use `read_lark_document` for reading, summarizing, analyzing, extracting, or checking Lark content.
+- Use `append_lark_document` only when the user explicitly asks to write, append, record, or update content.
+- Never expose App Secrets, access tokens, environment variables, or API credentials.
+- Never invent missing owners, deadlines, decisions, or document content.
+- If a write operation fails because of permissions, report the failure clearly instead of retrying blindly.
 
-## Reading workflow
+## Read workflow
 
-1. Receive a Lark Wiki or document URL.
+1. Identify the target Lark URL.
 2. Call `read_lark_document`.
 3. Read the returned content.
-4. Perform the user's requested analysis.
-5. Clearly separate information found in the document from your own interpretation.
+4. Perform the requested analysis.
+5. Separate document facts from interpretation.
 
-Typical requests:
+## Write workflow
 
-- Summarize this Lark document.
-- What tasks are still unfinished?
-- Extract action items and owners.
-- Identify decisions made in this meeting document.
-- Find information related to a specific topic.
+1. Confirm that the user explicitly requested a write.
+2. Identify the target Lark document.
+3. Prepare the exact text to append.
+4. Call `append_lark_document`.
+5. Report what was written.
 
-## Writing workflow
+Do not modify a document when the user only asks to read, inspect, summarize, or analyze it.
 
-Only write when the user explicitly requests a modification.
+## Common tasks
 
-1. Confirm the target document from the provided URL.
-2. Prepare the exact text to be written.
-3. Call `append_lark_document`.
-4. Report what was written and where.
+### Summarize
 
-Do not silently modify documents during a read or analysis request.
+Return:
+- key points
+- decisions
+- important dates
+- owners
+- open questions
 
-## Tool inputs
+### Extract action items
 
-### read_lark_document
+Prefer this structure:
 
-Input:
+- Task
+- Owner
+- Status
+- Due date
 
-```json
-{
-  "url": "https://example.larksuite.com/wiki/..."
-}
+Do not invent missing information.
 
+### Identify unfinished work
+
+Look for:
+- pending items
+- TODOs
+- undecided items
+- missing owners
+- missing deadlines
+- follow-up work
+
+### Update a document
+
+Append only the content the user requested.
+
+For detailed tool behavior, read `references/lark-tools.md`.
