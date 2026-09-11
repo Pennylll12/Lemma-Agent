@@ -22,6 +22,31 @@ async function checkCrawl(client) {
   assert.equal(invalid.isError, true);
 }
 
+async function checkSubtree(client) {
+  const r = await client.callTool({ name: "read_lark_wiki_subtree", arguments: { url } });
+  assert.ok(!r.isError);
+  const result = r.structuredContent;
+  assert.equal(result.document_count, 4);
+  assert.equal(result.attempted_document_count, 4);
+  assert.equal(result.truncated, false);
+  assert.equal(result.documents[0].node_token, "root");
+  assert.equal(result.documents[0].content, "Fixture document body");
+  assert.deepEqual(JSON.parse(r.content[0].text), result);
+  const capped = await client.callTool({ name: "read_lark_wiki_subtree", arguments: { url, max_documents: 1 } });
+  assert.equal(capped.structuredContent.document_count, 1);
+  assert.deepEqual(capped.structuredContent.truncation_reasons, ["max_documents"]);
+  const invalid = await client.callTool({ name: "read_lark_wiki_subtree", arguments: { url, max_documents: 0 } });
+  assert.equal(invalid.isError, true);
+  const partial = await client.callTool({ name: "read_lark_wiki_subtree",
+    arguments: { url: "https://example.larksuite.com/wiki/partial" } });
+  assert.ok(!partial.isError);
+  assert.equal(partial.structuredContent.document_count, 2);
+  assert.equal(partial.structuredContent.attempted_document_count, 3);
+  assert.equal(partial.structuredContent.errors[0].node_token, "denied");
+  assert.equal(partial.structuredContent.truncated, true);
+  assert.equal(JSON.stringify(partial).includes("PRIVATE"), false);
+}
+
 test("stdio discovers and calls crawl while preserving read tool", { timeout: 15000 }, async () => {
   const client = new Client({ name: "wiki-tree-test", version: "1.0.0" });
   const transport = new StdioClientTransport({
@@ -29,8 +54,9 @@ test("stdio discovers and calls crawl while preserving read tool", { timeout: 15
   });
   try {
     await client.connect(transport);
-    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ["crawl_lark_wiki_tree", "read_lark_document"]);
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ["crawl_lark_wiki_tree", "read_lark_document", "read_lark_wiki_subtree"]);
     await checkCrawl(client);
+    await checkSubtree(client);
     const r = await client.callTool({ name: "read_lark_document", arguments: { url } });
     assert.ok(!r.isError);
     assert.match(r.content[0].text, /Fixture document body/);
@@ -61,8 +87,9 @@ test("HTTP session survives discovery, crawl and existing tools; DELETE removes 
     const session = transport.sessionId;
     assert.ok(session);
     assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(),
-      ["crawl_lark_wiki_tree", "list_lark_wiki_children", "read_lark_document"]);
+      ["crawl_lark_wiki_tree", "list_lark_wiki_children", "read_lark_document", "read_lark_wiki_subtree"]);
     await checkCrawl(client);
+    await checkSubtree(client);
     for (const request of [
       { name: "read_lark_document", arguments: { url } },
       { name: "list_lark_wiki_children", arguments: { space_id: "123", parent_node_token: "root" } },
@@ -72,6 +99,11 @@ test("HTTP session survives discovery, crawl and existing tools; DELETE removes 
       ["runtime/test-wiki-tree-remote.js", base + "/mcp", url],
       { cwd, env: { ...process.env, MCP_ACCESS_TOKEN: "" }, timeout: 10000 });
     assert.equal(JSON.parse(acceptance.stdout).status, "PASS");
+    const subtreeAcceptance = await promisify(execFile)(process.execPath,
+      ["runtime/test-wiki-subtree-remote.js", base + "/mcp", url, "4"],
+      { cwd, env: { ...process.env, MCP_ACCESS_TOKEN: "" }, timeout: 10000 });
+    assert.equal(JSON.parse(subtreeAcceptance.stdout).status, "PASS");
+    assert.equal(subtreeAcceptance.stdout.includes("Fixture document body"), false);
     assert.equal((await (await fetch(base + "/health")).json()).sessions, 1);
     await transport.terminateSession();
     assert.equal((await (await fetch(base + "/health")).json()).sessions, 0);

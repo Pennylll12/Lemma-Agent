@@ -10,16 +10,20 @@ global.fetch = async (input, options = {}) => {
   if (url.pathname.endsWith("/tenant_access_token/internal")) {
     data = { code: 0, tenant_access_token: "fixture-token" };
   } else if (url.pathname.endsWith("/get_node")) {
-    if (url.searchParams.get("token") !== "root") throw Error("Unexpected root");
-    data = { code: 0, data: { node: node("root", true) } };
+    const token = url.searchParams.get("token");
+    if (!["root", "partial"].includes(token)) throw Error("Unexpected root");
+    data = { code: 0, data: { node: node(token, true) } };
   } else if (url.pathname.endsWith("/nodes")) {
     if (options.method && options.method !== "GET") throw Error("Unexpected mutation");
     const parent = url.searchParams.get("parent_node_token");
     const next = url.searchParams.get("page_token");
-    const items = parent === "root" ? [node(next ? "b" : "a", !next)] : [node("c")];
+    const items = parent === "partial" ? [node("denied"), node("c")] :
+      parent === "root" ? [node(next ? "b" : "a", !next)] : [node("c")];
     data = { code: 0, data: { items, has_more: parent === "root" && !next, page_token: next ? null : "next" } };
   } else if (url.pathname.endsWith("/raw_content")) {
-    data = { code: 0, data: { content: "Fixture document body" } };
+    data = url.pathname.includes("/denieddoc/")
+      ? { code: 999, msg: "PRIVATE upstream detail" }
+      : { code: 0, data: { content: "Fixture document body" } };
   } else {
     throw Error("Unexpected API path");
   }

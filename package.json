@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "node --test runtime/test-wiki-tree-tool.js runtime/test-wiki-tree-mcp.js",
+    "test": "node --test runtime/test-wiki-tree-tool.js runtime/test-wiki-subtree-tool.js runtime/test-wiki-tree-mcp.js",
+    "test:wiki-subtree": "node --test runtime/test-wiki-subtree-tool.js",
+    "test:wiki-subtree:mcp": "node --test runtime/test-wiki-tree-mcp.js",
+    "test:wiki-subtree:remote": "node runtime/test-wiki-subtree-remote.js",
     "test:wiki-tree": "node --test runtime/test-wiki-tree-tool.js",
     "test:wiki-tree:mcp": "node --test runtime/test-wiki-tree-mcp.js",
     "test:wiki-tree:remote": "node runtime/test-wiki-tree-remote.js",
