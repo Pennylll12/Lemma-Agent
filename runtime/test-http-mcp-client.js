@@ -1,54 +1,23 @@
 require("dotenv").config();
 
 const {
-  Client,
-} = require("@modelcontextprotocol/sdk/client/index.js");
-
-const {
-  StreamableHTTPClientTransport,
-} = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
+  extractWikiToken,
+  getWikiNode,
+} = require("../integrations/lark/wiki");
 
 async function main() {
-  const mcpUrl = process.env.MCP_SERVER_URL;
+  const url = process.argv[2];
 
-  if (!mcpUrl) {
+  if (!url) {
     throw new Error(
-      "Missing MCP_SERVER_URL in .env"
+      "Usage: node runtime/test-wiki-node-info.js <LARK_WIKI_URL>"
     );
   }
 
-  const transport =
-    new StreamableHTTPClientTransport(
-      new URL(mcpUrl)
-    );
+  const wikiToken = extractWikiToken(url);
+  const node = await getWikiNode(wikiToken);
 
-  const client = new Client({
-    name: "supermama-http-test-client",
-    version: "0.2.0",
-  });
-
-  await client.connect(transport);
-
-  const tools = await client.listTools();
-
-  console.log(
-    "Available tools:",
-    tools.tools.map((t) => t.name)
-  );
-
-  const result = await client.callTool({
-    name: "read_lark_document",
-    arguments: {
-      url:
-        "https://ysgjyjx6z20y.sg.larksuite.com/wiki/UvMrwd23Ti4BW3k6oHslXcABgec",
-    },
-  });
-
-  console.log(
-    JSON.stringify(result, null, 2)
-  );
-
-  await client.close();
+  console.log(JSON.stringify(node, null, 2));
 }
 
 main().catch(console.error);
