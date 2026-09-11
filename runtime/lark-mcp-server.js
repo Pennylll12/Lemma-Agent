@@ -5,6 +5,7 @@ const { StdioServerTransport } = require(
   "@modelcontextprotocol/sdk/server/stdio.js"
 );
 const { z } = require("zod");
+const { registerWikiTreeTool } = require("./register-wiki-tree-tool");
 
 const {
   readLarkDocumentTool,
@@ -12,7 +13,7 @@ const {
 
 const server = new McpServer({
   name: "supermama-lark",
-  version: "0.1.0",
+  version: "0.3.2",
 });
 
 server.registerTool(
@@ -55,9 +56,10 @@ server.registerTool(
 );
 
 async function main() {
+  registerWikiTreeTool(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Supermama Lark MCP Server v0.1.0 started");
+  console.error("Supermama Lark MCP Server v0.3.2 started");
 }
 
 main().catch((error) => {

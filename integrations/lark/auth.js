@@ -1,10 +1,11 @@
 require("dotenv").config({ quiet: true });
 
-async function getTenantAccessToken() {
+async function getTenantAccessToken({ signal } = {}) {
   const response = await fetch(
     "https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal",
     {
       method: "POST",
+      signal,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
       },

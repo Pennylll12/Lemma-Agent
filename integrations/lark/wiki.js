@@ -10,14 +10,15 @@ function extractWikiToken(url) {
   return match[1];
 }
 
-async function getWikiNode(wikiToken) {
-  const accessToken = await getTenantAccessToken();
+async function getWikiNode(wikiToken, { signal } = {}) {
+  const accessToken = await getTenantAccessToken({ signal });
 
   const response = await fetch(
     `https://open.larksuite.com/open-apis/wiki/v2/spaces/get_node?token=${encodeURIComponent(
       wikiToken
     )}`,
     {
+      signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -83,8 +84,9 @@ async function listWikiChildren({
   parentNodeToken,
   pageSize = 50,
   pageToken,
+  signal,
 }) {
-  const accessToken = await getTenantAccessToken();
+  const accessToken = await getTenantAccessToken({ signal });
 
   const params = new URLSearchParams({
     parent_node_token: parentNodeToken,
@@ -98,6 +100,7 @@ async function listWikiChildren({
   const response = await fetch(
     `https://open.larksuite.com/open-apis/wiki/v2/spaces/${spaceId}/nodes?${params.toString()}`,
     {
+      signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

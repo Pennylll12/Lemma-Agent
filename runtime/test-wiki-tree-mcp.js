@@ -1,0 +1,87 @@
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const { spawn, execFile } = require("node:child_process");
+const { promisify } = require("node:util");
+const { once } = require("node:events");
+const net = require("node:net");
+const path = require("node:path");
+const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
+const { StreamableHTTPClientTransport } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
+const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
+const url = "https://example.larksuite.com/wiki/root";
+const preload = path.join(__dirname, "test-fixtures/lark-fetch.js");
+const cwd = path.resolve(__dirname, "..");
+
+async function checkCrawl(client) {
+  const r = await client.callTool({ name: "crawl_lark_wiki_tree", arguments: { url } });
+  assert.ok(!r.isError);
+  assert.equal(r.structuredContent.node_count, 4);
+  assert.equal(r.structuredContent.truncated, false);
+  assert.deepEqual(JSON.parse(r.content[0].text), r.structuredContent);
+  const invalid = await client.callTool({ name: "crawl_lark_wiki_tree", arguments: { url: "https://evil.test/wiki/root" } });
+  assert.equal(invalid.isError, true);
+}
+
+test("stdio discovers and calls crawl while preserving read tool", { timeout: 15000 }, async () => {
+  const client = new Client({ name: "wiki-tree-test", version: "1.0.0" });
+  const transport = new StdioClientTransport({
+    command: process.execPath, args: ["--require", preload, "runtime/lark-mcp-server.js"], cwd, stderr: "pipe",
+  });
+  try {
+    await client.connect(transport);
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ["crawl_lark_wiki_tree", "read_lark_document"]);
+    await checkCrawl(client);
+    const r = await client.callTool({ name: "read_lark_document", arguments: { url } });
+    assert.ok(!r.isError);
+    assert.match(r.content[0].text, /Fixture document body/);
+  } finally { await client.close(); }
+});
+
+test("HTTP session survives discovery, crawl and existing tools; DELETE removes it", { timeout: 20000 }, async () => {
+  const probe = net.createServer();
+  await new Promise(resolve => probe.listen(0, "127.0.0.1", resolve));
+  const port = probe.address().port;
+  await new Promise(resolve => probe.close(resolve));
+  const child = spawn(process.execPath, ["--require", preload, "runtime/lark-mcp-http-server.js"], {
+    cwd, env: { ...process.env, PORT: String(port) }, stdio: ["ignore", "pipe", "pipe"],
+  });
+  const base = "http://127.0.0.1:" + port;
+  const client = new Client({ name: "wiki-tree-test", version: "1.0.0" });
+  const transport = new StreamableHTTPClientTransport(new URL(base + "/mcp"));
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(Error("Server startup timed out")), 5000);
+      child.stdout.on("data", data => {
+        if (String(data).includes("running on port")) { clearTimeout(timer); resolve(); }
+      });
+      child.once("error", error => { clearTimeout(timer); reject(error); });
+      child.once("exit", code => { clearTimeout(timer); reject(Error("Server exited: " + code)); });
+    });
+    await client.connect(transport);
+    const session = transport.sessionId;
+    assert.ok(session);
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(),
+      ["crawl_lark_wiki_tree", "list_lark_wiki_children", "read_lark_document"]);
+    await checkCrawl(client);
+    for (const request of [
+      { name: "read_lark_document", arguments: { url } },
+      { name: "list_lark_wiki_children", arguments: { space_id: "123", parent_node_token: "root" } },
+    ]) assert.ok(!(await client.callTool(request)).isError);
+    assert.equal(transport.sessionId, session);
+    const acceptance = await promisify(execFile)(process.execPath,
+      ["runtime/test-wiki-tree-remote.js", base + "/mcp", url],
+      { cwd, env: { ...process.env, MCP_ACCESS_TOKEN: "" }, timeout: 10000 });
+    assert.equal(JSON.parse(acceptance.stdout).status, "PASS");
+    assert.equal((await (await fetch(base + "/health")).json()).sessions, 1);
+    await transport.terminateSession();
+    assert.equal((await (await fetch(base + "/health")).json()).sessions, 0);
+    const stale = await fetch(base + "/mcp", {
+      method: "POST", headers: { "Content-Type": "application/json", "mcp-session-id": session },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 10, method: "tools/list" }),
+    });
+    assert.equal(stale.status, 404);
+  } finally {
+    await client.close();
+    if (child.exitCode === null) { child.kill(); await once(child, "exit"); }
+  }
+});
