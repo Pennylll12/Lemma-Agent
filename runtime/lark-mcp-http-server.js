@@ -1,3 +1,4 @@
+const { registerWikiSearchTools } = require("./register-wiki-search-tools");
 require("dotenv").config();
 const { registerWikiTreeTool } = require("./register-wiki-tree-tool");
 const { registerWikiSubtreeTool } = require("./register-wiki-subtree-tool");
@@ -31,7 +32,7 @@ const {
 
 const app = express();
 app.use((req, res, next) => {
-  res.setHeader("X-Supermama-Debug", "v0.3.3");
+  res.setHeader("X-Supermama-Debug", "v0.3.4");
 
   res.on("finish", () => {
     console.log(
@@ -55,7 +56,7 @@ const sessions = new Map();
 function createMcpServer() {
   const server = new McpServer({
     name: "supermama-lark",
-    version: "0.3.3",
+    version: "0.3.4",
   });
 
   server.registerTool(
@@ -194,6 +195,7 @@ function createMcpServer() {
 
   registerWikiTreeTool(server);
   registerWikiSubtreeTool(server);
+  registerWikiSearchTools(server);
   return server;
 }
 
@@ -203,7 +205,7 @@ app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     service: "supermama-lark-mcp",
-    version: "0.3.3",
+    version: "0.3.4",
     sessions: sessions.size,
   });
 });
@@ -440,6 +442,6 @@ const PORT =
 
 app.listen(PORT, () => {
   console.log(
-    `Supermama Lark MCP HTTP Server v0.3.3 running on port ${PORT}`
+    `Supermama Lark MCP HTTP Server v0.3.4 running on port ${PORT}`
   );
 });

@@ -1,3 +1,4 @@
+const { registerWikiSearchTools } = require("./register-wiki-search-tools");
 const { McpServer } = require(
   "@modelcontextprotocol/sdk/server/mcp.js"
 );
@@ -14,7 +15,7 @@ const {
 
 const server = new McpServer({
   name: "supermama-lark",
-  version: "0.3.3",
+  version: "0.3.4",
 });
 
 server.registerTool(
@@ -59,9 +60,10 @@ server.registerTool(
 async function main() {
   registerWikiTreeTool(server);
   registerWikiSubtreeTool(server);
+  registerWikiSearchTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Supermama Lark MCP Server v0.3.3 started");
+  console.error("Supermama Lark MCP Server v0.3.4 started");
 }
 
 main().catch((error) => {

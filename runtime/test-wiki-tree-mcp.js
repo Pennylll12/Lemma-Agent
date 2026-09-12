@@ -54,9 +54,18 @@ test("stdio discovers and calls crawl while preserving read tool", { timeout: 15
   });
   try {
     await client.connect(transport);
-    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ["crawl_lark_wiki_tree", "read_lark_document", "read_lark_wiki_subtree"]);
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ["crawl_lark_wiki_tree", "get_lark_wiki_metadata", "read_lark_document", "read_lark_wiki_subtree", "search_lark_wiki"]);
     await checkCrawl(client);
     await checkSubtree(client);
+    const metadata = await client.callTool({ name: "get_lark_wiki_metadata", arguments: { url } });
+    assert.equal(metadata.structuredContent.nodes.length, 4);
+    assert.equal(metadata.structuredContent.nodes[0].depth, 0);
+    const search = await client.callTool({ name: "search_lark_wiki", arguments: { url, query: "Fixture", max_results: 2 } });
+    assert.equal(search.structuredContent.result_count, 2);
+    assert.equal(search.structuredContent.matched_node_count, 4);
+    assert.equal(search.structuredContent.search_complete, true);
+    assert.equal(search.structuredContent.results_truncated, true);
+    assert.ok(search.structuredContent.results[0].snippet.includes("Fixture"));
     const r = await client.callTool({ name: "read_lark_document", arguments: { url } });
     assert.ok(!r.isError);
     assert.match(r.content[0].text, /Fixture document body/);
@@ -87,9 +96,18 @@ test("HTTP session survives discovery, crawl and existing tools; DELETE removes 
     const session = transport.sessionId;
     assert.ok(session);
     assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(),
-      ["crawl_lark_wiki_tree", "list_lark_wiki_children", "read_lark_document", "read_lark_wiki_subtree"]);
+      ["crawl_lark_wiki_tree", "get_lark_wiki_metadata", "list_lark_wiki_children", "read_lark_document", "read_lark_wiki_subtree", "search_lark_wiki"]);
     await checkCrawl(client);
     await checkSubtree(client);
+    const metadata = await client.callTool({ name: "get_lark_wiki_metadata", arguments: { url } });
+    assert.equal(metadata.structuredContent.nodes.length, 4);
+    assert.equal(metadata.structuredContent.nodes[0].depth, 0);
+    const search = await client.callTool({ name: "search_lark_wiki", arguments: { url, query: "Fixture", max_results: 2 } });
+    assert.equal(search.structuredContent.result_count, 2);
+    assert.equal(search.structuredContent.matched_node_count, 4);
+    assert.equal(search.structuredContent.search_complete, true);
+    assert.equal(search.structuredContent.results_truncated, true);
+    assert.ok(search.structuredContent.results[0].snippet.includes("Fixture"));
     for (const request of [
       { name: "read_lark_document", arguments: { url } },
       { name: "list_lark_wiki_children", arguments: { space_id: "123", parent_node_token: "root" } },
@@ -104,6 +122,11 @@ test("HTTP session survives discovery, crawl and existing tools; DELETE removes 
       { cwd, env: { ...process.env, MCP_ACCESS_TOKEN: "" }, timeout: 10000 });
     assert.equal(JSON.parse(subtreeAcceptance.stdout).status, "PASS");
     assert.equal(subtreeAcceptance.stdout.includes("Fixture document body"), false);
+    const searchAcceptance = await promisify(execFile)(process.execPath,
+      ["runtime/test-wiki-search-remote.js", base + "/mcp", url, "4", "Fixture"],
+      { cwd, env: { ...process.env, MCP_ACCESS_TOKEN: "" }, timeout: 10000 });
+    assert.equal(JSON.parse(searchAcceptance.stdout).status, "PASS");
+    assert.equal(JSON.parse(searchAcceptance.stdout).result_count, 4);
     assert.equal((await (await fetch(base + "/health")).json()).sessions, 1);
     await transport.terminateSession();
     assert.equal((await (await fetch(base + "/health")).json()).sessions, 0);
