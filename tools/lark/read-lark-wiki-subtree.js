@@ -1,3 +1,4 @@
+const { flattenWikiMetadata } = require("../../integrations/lark/wiki-metadata");
 const { crawlLarkWikiTreeTool } = require("./crawl-lark-wiki-tree");
 const { validateCrawlInput } = require("../../integrations/lark/wiki-tree");
 const { readWikiSubtreeDocuments, SUBTREE_LIMITS } = require("../../integrations/lark/wiki-subtree-documents");
@@ -16,8 +17,7 @@ async function readLarkWikiSubtreeTool(input = {}, {
   }
   const inventory = await crawl({ url, max_depth, max_nodes });
   // Root first, then breadth-first order, preserving the crawler's sibling order.
-  const nodes = [inventory.root, ...inventory.tree];
-  for (let i = 1; i < nodes.length; i++) nodes.push(...(nodes[i].children || []));
+  const nodes = flattenWikiMetadata(inventory);
   const result = await readWikiSubtreeDocuments(nodes, max_documents, { read, signal });
   return {
     success: true, source: "lark", action: "read_wiki_subtree",

@@ -30,3 +30,10 @@ npm run mcp:http
 v0.3.2 已於 PR #2 合併，使用者已完成 Codespaces → GitHub → Mac 同步及 GPT 連線。
 v0.3.3 在 `feature/lark-wiki-subtree-v0.3.3` 開發，發佈狀態以 Git 分支／PR 為準。
 目前 HTTP 仍是未加入鑑權的 POC，不應直接當成公司級正式服務。
+
+## v0.3.4 開發：Metadata 與 Wiki 搜尋
+
+新增 `get_lark_wiki_metadata` 與 `search_lark_wiki`，提供相對 Wiki 路徑、深度、
+擷取時間，以及指定子樹的標題／docx 正文字串搜尋。搜尋結果包含來源片段與覆蓋限制。
+詳見 [v0.3.4 使用及驗收](docs/versions/v0.3.4.md)。
+執行 `npm test` 或 `npm run test:wiki-search`；远端驗收用 `npm run test:wiki-search:remote`。

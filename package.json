@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "node --test runtime/test-wiki-tree-tool.js runtime/test-wiki-subtree-tool.js runtime/test-wiki-tree-mcp.js",
+    "test": "node --test runtime/test-wiki-tree-tool.js runtime/test-wiki-subtree-tool.js runtime/test-wiki-tree-mcp.js runtime/test-wiki-search.js",
     "test:wiki-subtree": "node --test runtime/test-wiki-subtree-tool.js",
     "test:wiki-subtree:mcp": "node --test runtime/test-wiki-tree-mcp.js",
     "test:wiki-subtree:remote": "node runtime/test-wiki-subtree-remote.js",
@@ -18,7 +18,9 @@
     "mcp:start": "node runtime/lark-mcp-server.js",
     "test:lark-auth": "node integrations/lark/test-auth.js",
     "test:lark-tool": "node runtime/test-tool.js",
-    "test:mcp": "node runtime/test-mcp-client.js"
+    "test:mcp": "node runtime/test-mcp-client.js",
+    "test:wiki-search": "node --test runtime/test-wiki-search.js runtime/test-wiki-tree-mcp.js",
+    "test:wiki-search:remote": "node runtime/test-wiki-search-remote.js"
   },
   "repository": {
     "type": "git",
