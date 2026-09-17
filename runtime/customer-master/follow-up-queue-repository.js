@@ -95,6 +95,12 @@ function maskPhoneDisplay(phoneDisplay) {
   return `${local.slice(0, Math.min(4, local.length))}${"*".repeat(Math.max(4, local.length - 4))}`;
 }
 
+function safeCustomerName(customerName) {
+  if (!customerName) return null;
+  const name = String(customerName).trim();
+  return name.replace(/\D/g, "").length >= 8 ? null : name;
+}
+
 function compactMessageText(text, maxLength = 120) {
   if (!text) return null;
   const normalized = String(text).replace(/\s+/g, " ").trim();
@@ -111,5 +117,6 @@ module.exports = {
   summarizeQueue,
   listFollowUpQueue,
   maskPhoneDisplay,
+  safeCustomerName,
   compactMessageText,
 };

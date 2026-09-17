@@ -5,6 +5,7 @@ const {
   compactMessageText,
   listFollowUpQueue,
   maskPhoneDisplay,
+  safeCustomerName,
   waitingDuration,
 } = require("./follow-up-queue-repository");
 
@@ -97,6 +98,8 @@ test("waiting duration is calculated at output time", () => {
 test("phone display is masked and message text is compacted", () => {
   assert.equal(maskPhoneDisplay("+852 9123 4567"), "9123****");
   assert.equal(maskPhoneDisplay(null), null);
+  assert.equal(safeCustomerName("85291234567"), null);
+  assert.equal(safeCustomerName("陳小姐"), "陳小姐");
   assert.equal(compactMessageText("a".repeat(121)), `${"a".repeat(119)}…`);
 });
 

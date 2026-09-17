@@ -1,5 +1,5 @@
 const { getCustomerMasterDb } = require("./firebase-admin");
-const { compactMessageText, listFollowUpQueue, maskPhoneDisplay } = require("./follow-up-queue-repository");
+const { compactMessageText, listFollowUpQueue, maskPhoneDisplay, safeCustomerName } = require("./follow-up-queue-repository");
 
 function formatHongKongTime(date) {
   if (!date) return null;
@@ -21,13 +21,6 @@ function displaySender(sender) {
   return normalized === "CUSTOMER" || normalized === "CS" ? normalized : null;
 }
 
-function statusReason(status) {
-  if (status === "WAITING_US") return "Latest customer message is not terminal acknowledgement";
-  if (status === "WAITING_CUSTOMER") return "Latest usable message is CS";
-  if (status === "RESOLVED") return "Customer acknowledgement follows CS reply";
-  return "No usable messages";
-}
-
 function toAcceptanceSummary(summary, items) {
   return {
     totalWaiting: summary.totalWaiting,
@@ -44,29 +37,28 @@ function toAcceptanceSummary(summary, items) {
 }
 
 function toAcceptanceItem(item) {
-  const lastMessageSender = displaySender(item.lastMessageSender);
-  const lastMessagePreview = compactMessageText(item.lastMessageText, 80);
+  const latestTurnDirection = displaySender(item.lastMessageSender);
+  const latestTurnPreview = compactMessageText(item.lastMessageText, 80);
   return {
     conversationId: item.conversationId,
     maskedPhone: maskPhoneDisplay(item.phoneDisplay),
-    customerName: item.customerName,
+    customerName: safeCustomerName(item.customerName),
     lastInboundAt: formatHongKongTime(item.lastInboundAt),
     lastOutboundAt: formatHongKongTime(item.lastOutboundAt),
     lastMessageAt: formatHongKongTime(item.lastMessageAt),
     waitingHours: item.waitingHours,
-    lastMessageSender,
-    lastMessagePreview,
-    previousMessageSender: null,
-    previousMessageAt: null,
-    previousMessagePreview: null,
-    usableMessagePreviews: lastMessageSender && item.lastMessageAt ? [{
-      sender: lastMessageSender,
+    latestTurnDirection,
+    latestTurnPreview,
+    previousTurnDirection: null,
+    previousTurnPreview: null,
+    usableMessagePreviews: latestTurnDirection && item.lastMessageAt ? [{
+      sender: latestTurnDirection,
       at: formatHongKongTime(item.lastMessageAt),
-      preview: lastMessagePreview,
+      preview: latestTurnPreview,
     }] : [],
-    messageCountUsedForStatus: null,
-    statusReason: statusReason(item.status),
-    systemStatus: item.status,
+    messageCountUsedForStatus: item.messageCountUsedForStatus ?? null,
+    statusReasonCode: item.statusReasonCode ?? null,
+    status: item.status,
     expectedHumanStatus: "",
     reviewResult: "",
     reviewNote: "",
@@ -90,4 +82,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { formatHongKongTime, displaySender, statusReason, toAcceptanceSummary, toAcceptanceItem };
+module.exports = { formatHongKongTime, displaySender, toAcceptanceSummary, toAcceptanceItem };

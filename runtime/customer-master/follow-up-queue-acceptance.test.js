@@ -19,14 +19,14 @@ test("acceptance output is masked, compact, and contains manual QA placeholders"
   });
 
   assert.equal(item.maskedPhone, "9123****");
-  assert.equal(item.lastMessagePreview, `${"a".repeat(79)}…`);
+  assert.equal(item.latestTurnPreview, `${"a".repeat(79)}…`);
   assert.equal(item.lastInboundAt, "2026-09-17 07:59:00");
   assert.equal(item.lastOutboundAt, "2026-09-17 07:58:00");
   assert.equal(item.lastMessageAt, "2026-09-17 08:00:00");
-  assert.equal(item.lastMessageSender, "CUSTOMER");
-  assert.equal(item.previousMessageSender, null);
+  assert.equal(item.latestTurnDirection, "CUSTOMER");
+  assert.equal(item.previousTurnDirection, null);
   assert.equal(item.messageCountUsedForStatus, null);
-  assert.equal(item.statusReason, "Latest customer message is not terminal acknowledgement");
+  assert.equal(item.statusReasonCode, null);
   assert.deepEqual(item.usableMessagePreviews, [{ sender: "CUSTOMER", at: "2026-09-17 08:00:00", preview: `${"a".repeat(79)}…` }]);
   assert.equal(item.expectedHumanStatus, "");
   assert.equal(item.reviewResult, "");
