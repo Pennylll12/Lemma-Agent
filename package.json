@@ -20,7 +20,12 @@
     "test:lark-tool": "node runtime/test-tool.js",
     "test:mcp": "node runtime/test-mcp-client.js",
     "test:wiki-search": "node --test runtime/test-wiki-search.js runtime/test-wiki-tree-mcp.js",
-    "test:wiki-search:remote": "node runtime/test-wiki-search-remote.js"
+    "test:wiki-search:remote": "node runtime/test-wiki-search-remote.js",
+    "test:customer-master": "node --test runtime/customer-master/*.test.js",
+    "sync:sleekflow:dry-run": "node runtime/customer-master/sleekflow-sync.js",
+    "sync:sleekflow:apply": "node runtime/customer-master/sleekflow-sync.js --apply",
+    "queue:follow-up": "node runtime/customer-master/follow-up-queue.js",
+    "queue:follow-up:acceptance": "node runtime/customer-master/follow-up-queue-acceptance.js"
   },
   "repository": {
     "type": "git",
@@ -38,6 +43,8 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "firebase-admin": "^13.6.1",
+    "firebase-admin": "^14.4.0",
     "https-proxy-agent": "^9.1.0",
     "openai": "^7.12.1",
     "undici": "^8.10.2",
