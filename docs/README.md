@@ -2,23 +2,27 @@
 
 Use this page as the entry point for current project documentation.
 
-## Current specifications
+## Start here
 
 | Document | Purpose |
 | --- | --- |
-| [Knowledge Registry](knowledge-registry.md) | Metadata schema, validation, whitelist and governed retrieval behavior. |
-| [Metadata Acceptance Report](metadata-acceptance-report.md) | Evidence from the frozen 13-record Metadata MVP acceptance run. |
-| [Conflict Taxonomy v1](conflict-taxonomy-v1.md) | Duplicate and conflict categories, comparison method and review policy. |
-| [Conflict Ground-Truth Cases](conflict-cases.md) | Human-readable summary of the automated conflict fixtures. |
-| [Project Structure](project-structure.md) | Responsibilities of runtime, registrations, tools, integrations and tests. |
-| [Agent Instructions](supermama-agent-instructions.md) | Concise ChatGPT Agent routing rules for Lark, metadata, conflicts and linked Google Drive files. |
+| [Agent Instructions](operations/supermama-agent-instructions.md) | Simple colleague workflows for retrieval, uploaded drafts, reviewed Wiki saving and source handling. |
+| [ChatGPT Acceptance Prompts](operations/test-prompts.md) | Copy-ready end-to-end prompts with observable pass/fail oracles. |
+| [Knowledge Registry](reference/knowledge-registry.md) | Current metadata schema, whitelist, retrieval gate, tools and test commands. |
+| [Retrieval Ranking](reference/retrieval-ranking.md) | Ranking contexts, score tables, result ordering, and returned ranking evidence. |
+| [Project Structure](architecture/project-structure.md) | Code ownership, directory layout and dependency direction. |
+| [Roadmap](planning/roadmap.md) | Deferred enhancements that are outside the current retrieval version. |
+| [Approved Document Creation](planning/v2-plan.md) | Drafting, reviewed Wiki placement, approved writing and read-back; metadata handled separately. |
+| [Document Publication Setup](reference/document-publication.md) | Configuration, API contracts, local receipts and failure handling. |
+| [Metadata Acceptance Report](reports/metadata-acceptance-report.md) | Historical evidence from the frozen 13-record Metadata MVP run. |
 
-Specifications explain expected behavior. Acceptance reports preserve evidence from a particular test baseline and should not be used as the latest operational instructions.
+Use Agent Instructions for runtime behavior and Knowledge Registry for the current technical contract. Acceptance and release documents preserve an earlier test baseline and may contain historical counts or limitations.
 
 ## Historical releases
 
 Release notes are retained under [`versions/`](versions/):
 
+- [v1.1.0](versions/v1.1.0.md)
 - [v0.1.0](versions/v0.1.0.md)
 - [v0.3.2](versions/v0.3.2.md)
 - [v0.3.3](versions/v0.3.3.md)
@@ -27,8 +31,6 @@ Release notes are retained under [`versions/`](versions/):
 
 Historical notes describe the project at the time of that release. Commands and limitations may have changed since then.
 
-## Generated artifacts
+## Generated report
 
-`validation-report.md` at the repository root is generated from the live Lark Base. Regenerate it rather than manually maintaining its record results.
-
-Images used by documentation are stored under [`assets/`](assets/).
+[`validation-report.md`](../validation-report.md) is generated from the live Lark Base. Regenerate it instead of editing its record results manually.

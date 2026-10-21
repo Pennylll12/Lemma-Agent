@@ -5,31 +5,35 @@ Production code is grouped by responsibility and then by feature.
 ```text
 integrations/lark/
   core/         Lark authentication and document APIs
+  documents/    Reviewed drafts, new Wiki publication and read-back verification
   wiki/         Wiki traversal, metadata and subtree logic
-  knowledge/    Registry retrieval gate plus optional management validation
-  conflicts/    Comparison rules and approved-decision reuse
+  knowledge/    Registry retrieval gate and external-domain governance
 
 tools/lark/
-  documents/    Raw document read and append handlers
+  documents/    Raw document read handler
   wiki/         Wiki tree, subtree, metadata and search handlers
   knowledge/    Registry-first discovery, governed retrieval and external URL authorization
-  conflicts/    Conflict resolution and assessment handlers
 
 runtime/
   core/         Shared MCP server factory
-  registrations/MCP tool schemas, descriptions and optional feature groups
+  registrations/  MCP tool schemas, descriptions and feature groups
   servers/      Stdio and Streamable HTTP transport entry points
 
 tests/
+  documents/    Approved publication, content mapping and failure handling
   wiki/         Wiki traversal, body reading and search
   knowledge/    Registry, validation and governed retrieval
-  conflicts/    Classification, decision reuse and assessment
   mcp/          MCP client checks
-  integration/  Manual integration checks
   fixtures/     Shared deterministic test data
 
 scripts/lark/   Authentication diagnostic
-docs/           Current specifications, acceptance evidence and release history
+docs/
+  operations/   Runtime instructions for the retrieval agent
+  reference/    Current technical contracts
+  architecture/ Code structure and dependency documentation
+  planning/     Roadmap and release plans
+  reports/      Acceptance evidence and generated-report guidance
+  versions/     Historical release notes and changelog
 ```
 
 ## Dependency direction
@@ -50,4 +54,6 @@ MCP client
 - Integrations contain reusable API and domain logic.
 - Production code must not import from `tests/` or `scripts/`.
 - Both MCP transports use the shared server factory so their core tool behavior stays consistent.
-- Detailed validation tools are loaded only when `ENABLE_VALIDATION_TOOLS=true` for the Knowledge Base Management Agent.
+- Document publication registrations call the publication coordinator in `integrations/lark/documents/`; its API and local receipt store are injectable for offline tests.
+- Private drafts and publication receipts are kept in `.lemma-drafts/`, which is excluded from Git.
+- Detailed metadata validation belongs to the separate Knowledge Base Management Agent.

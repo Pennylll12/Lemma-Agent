@@ -2,23 +2,28 @@
 
 This file summarizes notable project releases. Detailed historical evidence remains in the linked release notes.
 
-## Unreleased
+## [1.1.0]
 
 ### Added
 
-- Knowledge Registry validation, whitelist checks and retrieval eligibility.
+- Registry completeness, whitelist checks, and retrieval eligibility.
+- Registry-first metadata search and approved-domain web governance.
 - Governed `retrieve_knowledge_document` flow that checks eligibility before reading content.
-- Deterministic duplicate and conflict comparison with reusable approved decisions.
-- Agent-submitted semantic assessment as a `Pending` human-review proposal.
+- Native Lark tables, embedded Sheets, PDF attachment extraction, images, and whiteboards.
+- Minimum agent-level check for obvious contradictions in retrieved content.
 
 ### Changed
 
 - Shared MCP server factory now supplies both stdio and HTTP transports.
 - MCP registrations, tool handlers and Lark integration logic are separated by responsibility.
+- Normal retrieval reads the Registry first and falls back to Wiki search only when needed.
+- Agent instructions now use a concise, explicit retrieval order and stop rules.
 
 ### Removed
 
 - Internal OpenAI conflict-review calls and the unused v0.1 architecture page.
+- The full pairwise conflict comparison, decision registry and conflict MCP tools.
+- Legacy metadata validation code and its optional MCP tool. Detailed validation now belongs to Knowledge Base Management Agent.
 
 ## [0.3.4]
 

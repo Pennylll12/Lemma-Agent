@@ -1,4 +1,4 @@
-const DEFAULT_REGISTRY_URL = 'https://ysgjyjx6z20y.sg.larksuite.com/wiki/KkWCwccRviWlJLk8bAFlEToagKc?table=tblhBZGzkAfGXIzw&view=vewPu2Lfe7';
+const { readValidatedMetadata } = require('./validated-metadata');
 const DEFAULT_WHITELIST_URL = 'https://ysgjyjx6z20y.sg.larksuite.com/wiki/KkWCwccRviWlJLk8bAFlEToagKc?table=tblxxLSOp5lg3z9g';
 
 const LARK_HOST_PATTERN = /^[a-z0-9.-]+\.larksuite\.com$/i;
@@ -9,7 +9,7 @@ const MAX_RECORD_PAGES = 100;
 const RECORD_PAGE_SIZE = '500';
 const REQUEST_TIMEOUT_MS = 60000;
 
-// Exact column labels accepted in the separate External Reference whitelist table.
+// Exact column labels accepted in the separate web-search whitelist table.
 // The first label in each list is the recommended field title in Lark Base.
 const whitelistFields = {
   // The live pilot stores its URL in Source Name and organization in
@@ -49,9 +49,6 @@ const requiredByScope = {
   // and approval-workflow fields from metadata completeness.
   'Knowledge Base': ['source_url', 'authority_level', 'status'],
   Workspace: ['source_url'],
-  // Source Domain is required by the contract but derived from the URL, so an
-  // invalid URL still produces a clear missing-field result without a Base column.
-  'External Reference': ['source_url', 'source_domain', 'authority_level'],
 };
 
 const versionRequiredDocumentTypes = ['SOP', 'Pricing', 'Policy', 'Product Spec'];
@@ -59,16 +56,27 @@ const larkDateObjectKeys = ['text', 'value', 'date', 'result', 'formula_result',
 
 /**
  * Fetch raw Base records without modifying them or reading document bodies.
- * registryUrl precedence: explicit argument > LARK_REGISTRY_URL > project default.
+ * Read the published table, never the working Metadata Registry.
  * deps supplies optional getToken/getWikiNode/fetch replacements for offline tests.
  *
  * @returns {Promise<Array>} Lark records shaped as { record_id, fields }.
  * @example const records = await readKnowledgeRegistry({ registryUrl: baseUrl });
  */
 async function readKnowledgeRegistry(
-  { registryUrl = process.env.LARK_REGISTRY_URL || DEFAULT_REGISTRY_URL } = {},
+  { registryUrl } = {},
   deps = {},
 ) {
+  const env = deps.env || process.env;
+  if (registryUrl && registryUrl !== env.LARK_VALIDATED_METADATA_URL) {
+    throw new Error('Knowledge retrieval must use the configured Validated Metadata table.');
+  }
+  return readValidatedMetadata({ validatedUrl: env.LARK_VALIDATED_METADATA_URL,
+    journalUrl: env.LARK_VALIDATION_JOURNAL_URL }, {
+    readTable: url => readBaseRegistry({ registryUrl: url }, deps),
+  });
+}
+
+async function readBaseRegistry({ registryUrl }, deps = {}) {
   const { sourceType, appToken, tableId } = parseRegistryUrl(registryUrl);
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
@@ -109,8 +117,8 @@ async function readKnowledgeRegistry(
 }
 
 /**
- * Read the project's separate whitelist table. LARK_WHITELIST_URL or an
- * explicit whitelistUrl can override the built-in Supermama table.
+ * Read the approved-domain table used to govern external web search.
+ * LARK_WHITELIST_URL or an explicit whitelistUrl can override the built-in table.
  *
  * @example const rows = await readExternalWhitelist({ whitelistUrl });
  */
@@ -118,7 +126,7 @@ async function readExternalWhitelist(
   { whitelistUrl = process.env.LARK_WHITELIST_URL || DEFAULT_WHITELIST_URL } = {},
   deps = {},
 ) {
-  return readKnowledgeRegistry({ registryUrl: whitelistUrl }, deps);
+  return readBaseRegistry({ registryUrl: whitelistUrl }, deps);
 }
 
 function parseRegistryUrl(registryUrl) {
@@ -350,30 +358,18 @@ function normalizeDateObject(value) {
  *
  * @example normalizeRecord({ record_id: 'example', fields: { Title: 'Example' } });
  */
-function normalizeRecord(record, whitelist = []) {
+function normalizeRecord(record) {
   const metadata = mapBaseFieldsToMetadata(record.fields || {});
-  const whitelistCheck = checkWhitelist(metadata, whitelist);
-
-  // External governance fields come from the URL and whitelist source of truth;
-  // they do not need to exist as columns in the metadata registry table.
-  if (metadata.scope === 'External Reference') {
-    metadata.source_domain = whitelistCheck.details.document_domain;
-    metadata.whitelist_status = whitelistCheck.details.whitelist_status;
-  }
-
   const missingFields = findMissingRequiredFields(metadata);
   const metadataComplete = missingFields.length === 0;
-  const whitelistValid = metadata.scope === 'External Reference' ? whitelistCheck.approved : null;
-  const retrievalEligible = calculateRetrievalEligibility(metadata, metadataComplete, whitelistValid);
+  const retrievalEligible = calculateRetrievalEligibility(metadata, metadataComplete);
 
   return {
     record_id: record.record_id,
     ...metadata,
     metadata_complete: metadataComplete,
     missing_fields: missingFields,
-    whitelist_valid: whitelistValid,
     retrieval_eligible: retrievalEligible,
-    whitelist_check: whitelistCheck.details,
   };
 }
 
@@ -446,10 +442,6 @@ function normalizeDomain(value) {
   }
 }
 
-function getDocumentDomain(metadata) {
-  return normalizeDomain(metadata.source_url) || normalizeDomain(metadata.source_domain);
-}
-
 /** Parent domains approve their exact host and real subdomains only. */
 function domainMatches(documentDomain, approvedDomain) {
   return Boolean(
@@ -459,39 +451,13 @@ function domainMatches(documentDomain, approvedDomain) {
   );
 }
 
-function checkWhitelist(metadata, whitelist) {
-  if (metadata.scope !== 'External Reference') {
-    return { approved: null, details: null };
-  }
-
-  const documentDomain = getDocumentDomain(metadata);
-  const match = whitelist.find(entry => domainMatches(documentDomain, entry.domain));
-  const approved = match?.status === 'Approved';
-
-  return {
-    approved,
-    details: {
-      document_domain: documentDomain,
-      matched_domain: match?.domain || null,
-      whitelist_status: match?.status || null,
-      source_name: match?.source_name || null,
-      whitelist_record_id: match?.record_id || null,
-    },
-  };
-}
-
-/** Apply the frozen v1.0 retrieval gate after completeness and whitelist checks. */
-function calculateRetrievalEligibility(metadata, metadataComplete, whitelistValid) {
+/** Apply the Registry retrieval gate. Web-source approval is checked separately. */
+function calculateRetrievalEligibility(metadata, metadataComplete) {
   if (!metadataComplete) return false;
 
   if (metadata.scope === 'Knowledge Base') {
     return metadata.status === 'Approved' &&
       ['Internal Official', 'Reference'].includes(metadata.authority_level);
-  }
-
-  if (metadata.scope === 'External Reference') {
-    return whitelistValid === true &&
-      ['External Official', 'Reference'].includes(metadata.authority_level);
   }
 
   // Workspace and unknown scopes never enter formal Knowledge Retrieval.
@@ -509,10 +475,8 @@ async function getKnowledgeMetadata(input = {}, deps = {}) {
 
   const records = await (deps.read || readKnowledgeRegistry)(input, deps);
   const nonEmptyRecords = records.filter(record => !isEmptyRecord(record));
-  const needsWhitelist = nonEmptyRecords.some(record => text(record.fields?.Scope) === 'External Reference');
-  const whitelist = needsWhitelist ? await loadWhitelist(input, deps) : [];
   const documents = nonEmptyRecords
-    .map(record => normalizeRecord(record, whitelist))
+    .map(normalizeRecord)
     .filter(row => !input.url || row.source_url === input.url);
 
   return {
@@ -523,20 +487,6 @@ async function getKnowledgeMetadata(input = {}, deps = {}) {
     skipped_empty_record_count: records.length - nonEmptyRecords.length,
     documents,
   };
-}
-
-async function loadWhitelist(input, deps) {
-  // Tests can inject readWhitelist without credentials or network access.
-  const rows = deps.readWhitelist
-    ? await deps.readWhitelist(input, deps)
-    : deps.read
-      ? []
-      : await readExternalWhitelist(input, deps);
-
-  return rows
-    .filter(record => !isEmptyRecord(record))
-    .map(normalizeWhitelistRecord)
-    .filter(record => record.domain);
 }
 
 function validateLookupUrl(url) {
